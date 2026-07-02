@@ -64,6 +64,13 @@ export const pinrow_def = base_def
       .describe(
         "place the silkscreen reference text on the bottom layer instead of top",
       ),
+    flippinlabels: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe(
+        "place pin labels and the ref-des on the opposite side of the pin row",
+      ),
   })
   .transform((data) => {
     const pinlabelAnchorSide = determinePinlabelAnchorSide(data)
@@ -109,6 +116,16 @@ export const pinrow = (
   let pinlabelTextAlign: "center" | "left" | "right" = "center"
   if (pinlabeltextalignleft) pinlabelTextAlign = "left"
   else if (pinlabeltextalignright) pinlabelTextAlign = "right"
+
+  const _flipSide = {
+    top: "bottom",
+    bottom: "top",
+    left: "right",
+    right: "left",
+  } as const
+  const effectiveAnchorSide = parameters.flippinlabels
+    ? _flipSide[pinlabelAnchorSide]
+    : pinlabelAnchorSide
 
   const holes: AnyCircuitElement[] = []
   const numPinsPerRow = Math.ceil(num_pins / rows)
@@ -199,7 +216,7 @@ export const pinrow = (
       xoff,
       yoff,
       od,
-      anchorSide: pinlabelAnchorSide,
+      anchorSide: effectiveAnchorSide,
       smd: parameters.smd,
       pw: parameters.pw,
       pl: parameters.pl,
@@ -351,7 +368,11 @@ export const pinrow = (
   }
 
   // Add centered silkscreen reference text
-  const refText: SilkscreenRef = silkscreenRef(0, pinRowSpanY / 2 + p, 0.5)
+  const refText: SilkscreenRef = silkscreenRef(
+    0,
+    (parameters.flippinlabels ? -1 : 1) * (pinRowSpanY / 2 + p),
+    0.5,
+  )
 
   const padHalfWidth = parameters.smd ? parameters.pw / 2 : od / 2
   const padHalfHeight = parameters.smd ? parameters.pl / 2 : od / 2
